@@ -87,12 +87,16 @@ if selected:
 
     st.subheader("📊 누적 수익률 비교")
 
-    fig = px.line(normalized)
+    fig = px.line(
+        normalized,
+        labels={
+            "value": "기준가(100)",
+            "index": "날짜"
+        }
+    )
 
     fig.update_layout(
         height=600,
-        xaxis_title="날짜",
-        yaxis_title="기준가 (100)",
         legend_title="종목"
     )
 
@@ -121,29 +125,30 @@ if selected:
         f"({result_df.iloc[0]['수익률(%)']}%)"
     )
 
-    st.subheader("💰 실제 주가 그래프")
+    st.subheader("💰 실제 주가 비교")
 
-    for stock in close.columns:
+    chart_type = st.radio(
+        "그래프 방식",
+        ["일반", "로그 스케일"],
+        horizontal=True
+    )
 
-        st.markdown(f"### {stock}")
+    fig2 = px.line(close)
 
-        fig_stock = px.line(
-            close,
-            y=stock
-        )
+    fig2.update_layout(
+        height=600,
+        xaxis_title="날짜",
+        yaxis_title="주가",
+        legend_title="종목"
+    )
 
-        fig_stock.update_layout(
-            height=400,
-            xaxis_title="날짜",
-            yaxis_title="주가",
-            showlegend=False
-        )
+    if chart_type == "로그 스케일":
+        fig2.update_yaxes(type="log")
 
-        st.plotly_chart(
-            fig_stock,
-            use_container_width=True
-        )
+    st.plotly_chart(
+        fig2,
+        use_container_width=True
+    )
 
 else:
     st.info("비교할 종목을 선택하세요.")
-    
