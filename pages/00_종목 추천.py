@@ -10,7 +10,7 @@ st.set_page_config(
 
 st.title("⭐ 종목 추천")
 
-stocks = {
+STOCKS = {
     "Apple": "AAPL",
     "Microsoft": "MSFT",
     "NVIDIA": "NVDA",
@@ -27,11 +27,18 @@ stocks = {
     "POSCO홀딩스": "005490.KS",
 }
 
+st.markdown(
+    """
+    최근 1년간의 수익률을 기준으로
+    주요 한국·미국 종목을 분석합니다.
+    """
+)
+
+result = []
+
 with st.spinner("데이터 분석 중..."):
 
-    result = []
-
-    for name, ticker in stocks.items():
+    for name, ticker in STOCKS.items():
 
         try:
             df = yf.download(
@@ -41,11 +48,13 @@ with st.spinner("데이터 분석 중..."):
                 progress=False
             )
 
-            if len(df) < 30:
+            if df.empty:
                 continue
 
-            start_price = float(df["Close"].iloc[0])
-            end_price = float(df["Close"].iloc[-1])
+            close = df["Close"].dropna()
+
+            start_price = float(close.iloc[0])
+            end_price = float(close.iloc[-1])
 
             return_pct = (
                 (end_price - start_price)
@@ -54,55 +63,56 @@ with st.spinner("데이터 분석 중..."):
             )
 
             volatility = (
-                df["Close"]
-                .pct_change()
-                .std()
+                close.pct_change().std()
                 * 100
             )
 
             result.append({
                 "종목": name,
                 "1년 수익률(%)": round(return_pct, 2),
-                "변동성": round(float(volatility), 2)
+                "변동성(%)": round(float(volatility), 2)
             })
 
-        except:
-            pass
+        except Exception:
+            continue
+
+if not result:
+    st.error("주가 데이터를 불러오지 못했습니다.")
+    st.stop()
 
 result_df = pd.DataFrame(result)
 
 result_df = result_df.sort_values(
-    "1년 수익률(%)",
+    by="1년 수익률(%)",
     ascending=False
+).reset_index(drop=True)
+
+best = result_df.iloc[0]
+
+st.success(
+    f"""
+추천 종목: {best['종목']}
+
+최근 1년 수익률: {best['1년 수익률(%)']}%
+"""
 )
 
-st.subheader("🏆 최근 1년 수익률 순위")
+st.subheader("🏆 수익률 순위")
 
 st.dataframe(
     result_df,
-    use_container_width=True
+    use_container_width=True,
+    hide_index=True
 )
 
-if not result_df.empty:
-
-    best = result_df.iloc[0]
-
-    st.success(
-        f"""
-        추천 종목: {best['종목']}
-
-        최근 1년 수익률:
-        {best['1년 수익률(%)']}%
-        """
-    )
-
-st.subheader("📈 상위 5개 추천")
+st.subheader("📈 TOP 5 추천 종목")
 
 st.dataframe(
     result_df.head(5),
-    use_container_width=True
+    use_container_width=True,
+    hide_index=True
 )
 
 st.caption(
-    "※ 단순 과거 수익률 기반 추천이며 투자 권유가 아닙니다."
+    "※ 과거 수익률을 기준으로 계산한 결과이며 투자 권유가 아닙니다."
 )
