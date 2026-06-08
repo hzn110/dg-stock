@@ -31,6 +31,15 @@ stocks = {
     "POSCO홀딩스": "005490.KS",
 }
 
+period_map = {
+    "1개월": "1mo",
+    "3개월": "3mo",
+    "6개월": "6mo",
+    "1년": "1y",
+    "2년": "2y",
+    "5년": "5y"
+}
+
 col1, col2 = st.columns(2)
 
 with col1:
@@ -41,11 +50,13 @@ with col1:
     )
 
 with col2:
-    period = st.selectbox(
+    period_kor = st.selectbox(
         "기간 선택",
-        ["1mo", "3mo", "6mo", "1y", "2y", "5y"],
+        list(period_map.keys()),
         index=3
     )
+
+period = period_map[period_kor]
 
 if selected:
 
@@ -53,7 +64,7 @@ if selected:
 
     with st.spinner("주가 데이터 불러오는 중..."):
         data = yf.download(
-            tickers,
+            tickers=tickers,
             period=period,
             auto_adjust=True,
             progress=False
@@ -71,8 +82,7 @@ if selected:
     normalized = close / close.iloc[0] * 100
 
     returns = (
-        (close.iloc[-1] / close.iloc[0] - 1)
-        * 100
+        (close.iloc[-1] / close.iloc[0] - 1) * 100
     ).round(2)
 
     st.subheader("📊 누적 수익률 비교")
@@ -82,24 +92,11 @@ if selected:
     fig.update_layout(
         height=600,
         xaxis_title="날짜",
-        yaxis_title="기준가(100)",
+        yaxis_title="기준가 (100)",
         legend_title="종목"
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
-    st.subheader("💰 실제 주가 비교")
-
-    fig2 = px.line(close)
-
-    fig2.update_layout(
-        height=600,
-        xaxis_title="날짜",
-        yaxis_title="주가",
-        legend_title="종목"
-    )
-
-    st.plotly_chart(fig2, use_container_width=True)
 
     st.subheader("🏆 수익률 순위")
 
@@ -124,5 +121,29 @@ if selected:
         f"({result_df.iloc[0]['수익률(%)']}%)"
     )
 
+    st.subheader("💰 실제 주가 그래프")
+
+    for stock in close.columns:
+
+        st.markdown(f"### {stock}")
+
+        fig_stock = px.line(
+            close,
+            y=stock
+        )
+
+        fig_stock.update_layout(
+            height=400,
+            xaxis_title="날짜",
+            yaxis_title="주가",
+            showlegend=False
+        )
+
+        st.plotly_chart(
+            fig_stock,
+            use_container_width=True
+        )
+
 else:
     st.info("비교할 종목을 선택하세요.")
+    
