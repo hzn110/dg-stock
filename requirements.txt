@@ -1,3 +1,2 @@
-yfinan
-ce
+yfinance
 plotly
